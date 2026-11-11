@@ -17,17 +17,37 @@ def load_data(red_path: str, white_path: str) -> pd.DataFrame:
 
     Note: Don't forget to add the 'type' attribute.
     """
-    # TODO: Your code here
-    data = None
+    red_wine = pd.read_csv(red_path, sep=';')
+    white_wine = pd.read_csv(white_path, sep=';')
+
+    red_wine['type'] = 'red'
+    white_wine['type'] = 'white'
+
+    data = pd.concat([red_wine, white_wine], ignore_index=True)
+
+    if data.isnull().values.any():
+        data = data.dropna()
 
     return data
+    
 
 
 def remove_outliers(df: pd.DataFrame, features: pd.Index) -> pd.DataFrame:
     """Removing outliers from a dataset using the IQR method."""
     df_clean = df.copy()
 
-    # TODO: Your code here
+    for feature in features:
+        Q1 = df_clean[feature].quantile(0.25)
+        Q3 = df_clean[feature].quantile(0.75)
+        IQR = Q3 - Q1
+
+        lower_bound = Q1 - 1.5 * IQR
+        upper_bound = Q3 + 1.5 * IQR
+
+        df_clean = df_clean[
+            (df_clean[feature] >= lower_bound) &
+            (df_clean[feature] <= upper_bound)
+        ]
 
     return df_clean
 
@@ -36,7 +56,11 @@ def encode_categorical_variables(data: pd.DataFrame) -> pd.DataFrame:
     """Encoding of categorical variables."""
     data_encoded = data.copy()
 
-    # TODO: Your code here
+    data_encoded = pd.get_dummies(
+            data_encoded,
+            columns=['type'],
+            dtype=int
+        )
 
     return data_encoded
 
@@ -45,8 +69,10 @@ def scale_features(
     X_train: pd.DataFrame
 ) -> np.ndarray:
     """Standartization (scaling) of features"""
-    # TODO: Your code here
-    X_train_scaled = None
+
+    scaler = StandardScaler()
+
+    X_train_scaled = scaler.fit_transform(X_train)
 
     return X_train_scaled
 
@@ -57,20 +83,25 @@ def apply_pca(X: pd.DataFrame) -> np.ndarray:
     """
     X_scaled = scale_features(X)
 
-    # TODO: Your code here
+    pca = PCA(n_components=2)
+    X_pca = pca.fit_transform(X_scaled)
 
-    X_pca = None
     return X_pca
 
 
 def perform_clustering(X_pca: np.ndarray) -> dict[str, float | np.ndarray]:
     """Performing clustering based on PCA results."""
     # K-means
-    # TODO: Your code here
+    kmeans = KMeans(n_clusters=3, random_state=42, n_init=10)
+    labels = kmeans.fit_predict(X_pca)
 
     # Model evaluation
-    # TODO: Your code here
-    results = {'labels': [], 'silhouette_score': 0.0}
+    score = silhouette_score(X_pca, labels)
+
+    results = {
+        'labels': labels,
+        'silhouette_score': score
+    }
 
     return results
 
